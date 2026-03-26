@@ -1,0 +1,655 @@
+Here is an HTML document that creates an interactive birthday card with confetti animations, a digital candle that responds to clicks and microphone blow detection, and a personalized message feature.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🎉 Happy Birthday Card | Confetti & Digital Candle</title>
+  <!-- Google Fonts: Decorative & Elegant -->
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Quicksand:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti Library (lightweight) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* slight polish, but text input remains selectable */
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #f9e7b3 0%, #f5b7a8 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Quicksand', sans-serif;
+      padding: 20px;
+      position: relative;
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="27" viewBox="0 0 24 27"><polygon points="2,2 22,13 12,16 2,25" fill="%23ff66aa" stroke="%23ff3388" stroke-width="1.5"/><circle cx="12" cy="12" r="2" fill="white"/></svg>') 12 5, auto;
+    }
+
+    /* Main Card Container */
+    .birthday-card {
+      max-width: 650px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 72px 48px 72px 48px;
+      box-shadow: 0 30px 40px rgba(0, 0, 0, 0.25), 0 0 0 12px #ffecb3, 0 0 0 15px #ffb347;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+      backdrop-filter: blur(0px);
+    }
+
+    .birthday-card:hover {
+      transform: scale(1.01);
+    }
+
+    /* Header with confetti trigger zone */
+    .card-header {
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fad0c4);
+      padding: 28px 20px 20px;
+      text-align: center;
+      border-bottom: 4px dashed #ffd966;
+      position: relative;
+    }
+
+    .card-header h1 {
+      font-family: 'Great Vibes', cursive;
+      font-size: 3.5rem;
+      color: #fff3e0;
+      text-shadow: 3px 3px 0 #e67300, 6px 6px 0 rgba(0,0,0,0.2);
+      letter-spacing: 2px;
+      word-break: keep-all;
+    }
+
+    .confetti-btn {
+      background: #ffb347;
+      border: none;
+      padding: 8px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 60px;
+      color: #442200;
+      font-family: 'Quicksand', sans-serif;
+      margin-top: 15px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #8b4c1a;
+      transition: 0.07s linear;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .confetti-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #8b4c1a;
+    }
+
+    /* Digital Candle Section */
+    .candle-section {
+      background: #fffaf0;
+      padding: 20px 20px 15px;
+      text-align: center;
+      border-bottom: 2px solid #ffdead;
+    }
+
+    .candle-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #d45a2b;
+      margin-bottom: 12px;
+    }
+
+    .digital-candle {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .candle-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .candle-container:hover {
+      transform: scale(1.03);
+    }
+
+    .candle {
+      position: relative;
+      width: 55px;
+      height: 110px;
+      background: linear-gradient(90deg, #ffb347, #ff8c1a);
+      border-radius: 20px 20px 12px 12px;
+      box-shadow: 0 8px 0 #b45f1b;
+      transition: all 0.2s;
+    }
+
+    .flame {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 32px;
+      background: radial-gradient(circle, #ffdd77, #ff6600);
+      border-radius: 50% 50% 20% 20%;
+      box-shadow: 0 0 12px 3px #ffa500;
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+
+    /* Lit flame animation */
+    .flame.lit {
+      animation: flicker 0.15s infinite alternate;
+      background: radial-gradient(circle, #ffb347, #ff4500);
+      box-shadow: 0 0 18px 6px #ff7b00;
+    }
+
+    @keyframes flicker {
+      0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
+      100% { transform: translateX(-50%) scale(1.12); opacity: 1; }
+    }
+
+    /* unlit state: grey smoke-like */
+    .flame.unlit {
+      background: #b0a07c;
+      box-shadow: none;
+      width: 12px;
+      height: 14px;
+      top: -12px;
+      border-radius: 30%;
+      background: #7f6b4a;
+      filter: blur(1px);
+      opacity: 0.6;
+    }
+
+    .candle-label {
+      margin-top: 12px;
+      font-weight: 600;
+      background: #ffefcf;
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      color: #b64926;
+    }
+
+    .blow-hint {
+      background: #ffedd5;
+      display: inline-block;
+      padding: 6px 15px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 12px;
+      color: #ad5a2a;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 1px 2px white;
+    }
+
+    /* Personalized Message Section */
+    .message-section {
+      padding: 25px 30px 30px;
+      background: #fffbf0;
+    }
+
+    .message-label {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.7rem;
+      font-weight: bold;
+      color: #c2492d;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 6px solid #ffaa66;
+      padding-left: 15px;
+    }
+
+    .message-input-area {
+      margin-bottom: 25px;
+    }
+
+    #birthdayMessageInput {
+      width: 100%;
+      padding: 16px 18px;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1rem;
+      border: 2px solid #ffcd94;
+      border-radius: 48px;
+      background: #fffef7;
+      resize: vertical;
+      outline: none;
+      transition: 0.2s;
+      font-weight: 500;
+      color: #3a2a1f;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    #birthdayMessageInput:focus {
+      border-color: #ff8c42;
+      box-shadow: 0 0 0 3px rgba(255,140,66,0.2);
+    }
+
+    .decorative-message {
+      background: #fff1df;
+      border-radius: 48px;
+      padding: 20px 24px;
+      text-align: center;
+      word-wrap: break-word;
+      box-shadow: inset 0 1px 4px #ffd8aa, 0 6px 12px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+      border: 1px solid #ffe3b5;
+    }
+
+    .decorative-message p {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2rem;
+      color: #bc4e2c;
+      margin: 0;
+      line-height: 1.3;
+      font-weight: 500;
+      text-shadow: 1px 1px 0 #ffe0b5;
+    }
+
+    .decorative-message span {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 0.9rem;
+      color: #a16238;
+      display: inline-block;
+      margin-top: 12px;
+      letter-spacing: 1px;
+    }
+
+    /* signature & footer */
+    .footer-note {
+      background: #ffe2b5;
+      text-align: center;
+      padding: 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #a55228;
+      border-top: 2px dotted #ffbb77;
+    }
+
+    button {
+      background: none;
+      border: none;
+    }
+
+    @media (max-width: 550px) {
+      .birthday-card {
+        border-radius: 48px 32px 48px 32px;
+      }
+      .card-header h1 {
+        font-size: 2.5rem;
+      }
+      .decorative-message p {
+        font-size: 1.6rem;
+      }
+      .candle {
+        width: 45px;
+        height: 95px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="birthday-card">
+  <div class="card-header">
+    <h1>🎂 Happy Birthday! 🎉</h1>
+    <button class="confetti-btn" id="launchConfettiBtn">✨ Pop Confetti! ✨</button>
+  </div>
+
+  <!-- Digital Candle Section: interactive & blow-to-extinguish simulation -->
+  <div class="candle-section">
+    <div class="candle-title">🕯️ Make a Wish & Blow the Candle 🕯️</div>
+    <div class="digital-candle" id="digitalCandleWrapper">
+      <!-- Single digital candle with interactive flame -->
+      <div class="candle-container" id="mainCandle">
+        <div class="candle">
+          <div class="flame lit" id="candleFlame"></div>
+        </div>
+        <div class="candle-label">✨ Birthday Wish Candle ✨</div>
+      </div>
+    </div>
+    <div class="blow-hint" id="blowHint">💨 Click the flame to blow it out! (or click again to reignite) 💨</div>
+    <div class="blow-hint" style="background: #f5e2c6; margin-top: 6px;">🎤 Bonus: Microphone blow detection (if allowed) — try blowing into your mic! 🎤</div>
+  </div>
+
+  <!-- Personalized Message Section with decorative fonts -->
+  <div class="message-section">
+    <div class="message-label">
+      ✍️ Your Personalized Message
+    </div>
+    <div class="message-input-area">
+      <input type="text" id="birthdayMessageInput" placeholder="e.g., Wishing you endless joy, laughter & cake! 🎂🎈" value="Happy Birthday to the most amazing person! May your day sparkle ✨">
+    </div>
+    <div class="decorative-message" id="decorativeMessageCard">
+      <p id="dynamicMessageText">Happy Birthday to the most amazing person! May your day sparkle ✨</p>
+      <span>❤️ with love & confetti ❤️</span>
+    </div>
+  </div>
+  <div class="footer-note">
+    🎈 Click anywhere on the card for extra mini‑confetti! 🎈
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- CONFETTI LAUNCH (on load, plus manual trigger) ----------
+    function launchConfetti(origin = 'center', intensity = 'medium') {
+      // basic burst with variation
+      let count = 150;
+      let spread = 70;
+      let startVelocity = 20;
+      if (intensity === 'high') {
+        count = 300;
+        spread = 100;
+        startVelocity = 25;
+      } else if (intensity === 'low') {
+        count = 80;
+        spread = 50;
+      }
+      canvasConfetti({
+        particleCount: count,
+        spread: spread,
+        origin: { y: 0.6 },
+        startVelocity: startVelocity,
+        colors: ['#ff0044', '#ffcc00', '#33ff66', '#ff66cc', '#44aaff', '#ffaa33'],
+        decay: 0.9,
+        ticks: 200
+      });
+      // additional side cascade
+      setTimeout(() => {
+        canvasConfetti({
+          particleCount: 40,
+          angle: 60,
+          spread: 45,
+          origin: { x: 0, y: 0.7 },
+          colors: ['#ffaa88', '#ffdd88', '#ff8888']
+        });
+        canvasConfetti({
+          particleCount: 40,
+          angle: 120,
+          spread: 45,
+          origin: { x: 1, y: 0.7 },
+          colors: ['#ffaa88', '#ffdd88', '#ff8888']
+        });
+      }, 120);
+    }
+
+    // on page load: burst of confetti to celebrate launch!
+    window.addEventListener('load', () => {
+      launchConfetti('center', 'high');
+      // Also small initial greeting
+    });
+
+    // manual button confetti
+    const confettiBtn = document.getElementById('launchConfettiBtn');
+    confettiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      launchConfetti('center', 'high');
+      // also animate little feedback on button
+      confettiBtn.style.transform = 'scale(0.97)';
+      setTimeout(() => { confettiBtn.style.transform = ''; }, 100);
+    });
+
+    // extra: click on card background (but not interfering with inputs) sends mini confetti
+    const card = document.querySelector('.birthday-card');
+    card.addEventListener('click', (e) => {
+      // avoid double triggers from inner buttons (they stopPropagation where needed)
+      if (e.target.closest('.confetti-btn')) return;
+      if (e.target.closest('#birthdayMessageInput')) return;
+      if (e.target.closest('.candle-container')) return;
+      launchConfetti('center', 'low');
+    });
+
+    // ---------- DIGITAL CANDLE LOGIC (toggle flame & blow detection) ----------
+    const flameElement = document.getElementById('candleFlame');
+    let isLit = true;   // starts lit
+
+    function updateFlameState(lit) {
+      isLit = lit;
+      if (isLit) {
+        flameElement.classList.remove('unlit');
+        flameElement.classList.add('lit');
+        flameElement.style.background = ''; // ensure radial override via class
+        // Extra glow effect
+        flameElement.style.boxShadow = '0 0 12px 3px #ffa500';
+      } else {
+        flameElement.classList.remove('lit');
+        flameElement.classList.add('unlit');
+        flameElement.style.boxShadow = 'none';
+      }
+      // optional: add small confetti burst when candle blown out or reignited? not needed but fun: small spark on reignite
+      if (isLit) {
+        canvasConfetti({
+          particleCount: 12,
+          spread: 18,
+          origin: { y: 0.55, x: 0.5 },
+          startVelocity: 8,
+          colors: ['#ffaa33', '#ffdd77']
+        });
+      } else {
+        // when blown out, little "poof" effect
+        canvasConfetti({
+          particleCount: 6,
+          spread: 30,
+          origin: { y: 0.55, x: 0.5 },
+          startVelocity: 4,
+          colors: ['#aaaaaa', '#cccc99'],
+          gravity: 0.6
+        });
+      }
+    }
+
+    // Toggle by clicking on the candle or its flame or container
+    const candleContainer = document.getElementById('mainCandle');
+    const toggleCandle = () => {
+      updateFlameState(!isLit);
+    };
+    candleContainer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCandle();
+    });
+
+    // ---------- BLOW DETECTION USING MICROPHONE (optional, with permission) ----------
+    let mediaStream = null;
+    let audioContext = null;
+    let sourceNode = null;
+    let analyserNode = null;
+    let blowDetectionActive = false;
+    let blowTriggerCooldown = false;
+
+    // Function to request mic & setup blow detection
+    async function initBlowDetection() {
+      if (blowDetectionActive) return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        mediaStream = stream;
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (sourceNode) sourceNode.disconnect();
+        sourceNode = audioContext.createMediaStreamSource(stream);
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        sourceNode.connect(analyserNode);
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        function detectBlow() {
+          if (!analyserNode || !blowDetectionActive) return;
+          analyserNode.getByteTimeDomainData(dataArray);
+          let maxSample = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            let v = (dataArray[i] - 128) / 128;
+            let amp = Math.abs(v);
+            if (amp > maxSample) maxSample = amp;
+          }
+          const volume = maxSample;
+          // threshold for "blow" - sensitivity tuned
+          if (volume > 0.38 && isLit && !blowTriggerCooldown) {
+            blowTriggerCooldown = true;
+            // blow out candle!
+            if (isLit) {
+              updateFlameState(false);
+              canvasConfetti({
+                particleCount: 70,
+                spread: 55,
+                origin: { y: 0.55, x: 0.5 },
+                startVelocity: 14,
+                colors: ['#b0c4de', '#ffe0b5', '#f0e68c', '#ffdab9']
+              });
+              const hintDiv = document.getElementById('blowHint');
+              const originalHTML = hintDiv.innerHTML;
+              hintDiv.innerHTML = '💨✨ Whoosh! You blew out the candle! Make a wish! 🎂✨💨';
+              setTimeout(() => {
+                if (hintDiv && hintDiv.innerHTML.includes('Whoosh')) hintDiv.innerHTML = originalHTML;
+              }, 2500);
+            }
+            setTimeout(() => { blowTriggerCooldown = false; }, 800);
+          }
+          requestAnimationFrame(detectBlow);
+        }
+        
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        blowDetectionActive = true;
+        detectBlow();
+        const micHint = document.getElementById('blowHint');
+        if (micHint && !micHint.innerHTML.includes('🎙️')) {
+          micHint.innerHTML = '🎙️ Mic active! Blow into mic to extinguish! 🔥➡️💨 ' + micHint.innerHTML;
+        }
+      } catch (err) {
+        console.warn("Microphone access not granted or error:", err);
+        const micHint = document.getElementById('blowHint');
+        if (micHint && !micHint.innerHTML.includes('Mic unavailable')) {
+          micHint.innerHTML = '💨 Click flame to blow! (Mic unavailable: permission or no mic) 💨';
+        }
+      }
+    }
+
+    // Ask for mic permission on first user gesture (click on candle or blow hint)
+    let micInitialized = false;
+    function tryEnableMicBlow() {
+      if (micInitialized) return;
+      micInitialized = true;
+      initBlowDetection().catch(e => console.log);
+    }
+    // Attach mic activation to candle and blow-hint with 'once' limited but also allow reattempt if failed
+    candleContainer.addEventListener('click', () => tryEnableMicBlow(), { once: true });
+    const blowHintElement = document.getElementById('blowHint');
+    blowHintElement.addEventListener('click', () => tryEnableMicBlow(), { once: true });
+    // also if user clicks anywhere on card gently try once, but not on confetti button
+    card.addEventListener('click', function micOnce(e) {
+      if (!micInitialized && !e.target.closest('.confetti-btn') && !e.target.closest('#birthdayMessageInput')) {
+        tryEnableMicBlow();
+        card.removeEventListener('click', micOnce);
+      }
+    }, { once: true });
+
+    // clean up on page unload (optional)
+    window.addEventListener('beforeunload', () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+      }
+      if (audioContext) {
+        audioContext.close();
+      }
+    });
+
+    // ---------- PERSONALIZED MESSAGE SECTION (real-time update) ----------
+    const messageInput = document.getElementById('birthdayMessageInput');
+    const dynamicMsgElem = document.getElementById('dynamicMessageText');
+    
+    function updatePersonalizedMessage() {
+      let rawText = messageInput.value.trim();
+      if (rawText === "") {
+        rawText = "🎈 Happy Birthday! Enjoy your special day! 🎈";
+      }
+      dynamicMsgElem.innerText = rawText;
+      // small decorative bouncy effect on message card
+      const msgCard = document.getElementById('decorativeMessageCard');
+      msgCard.style.transform = 'scale(1.01)';
+      setTimeout(() => { msgCard.style.transform = ''; }, 150);
+    }
+    
+    messageInput.addEventListener('input', updatePersonalizedMessage);
+    updatePersonalizedMessage(); // initial sync
+    
+    // Extra flair: when you type, tiny confetti pop for fun (optional)
+    messageInput.addEventListener('keyup', (e) => {
+      if (Math.random() < 0.2) {
+        canvasConfetti({
+          particleCount: 5,
+          spread: 15,
+          origin: { y: 0.85, x: 0.5 },
+          startVelocity: 5,
+          colors: ['#ffd966', '#ff9966']
+        });
+      }
+    });
+    
+    // Also initial flame set lit (already lit by default)
+    // Ensure that after blow detection user can manually reignite by clicking the candle.
+    // Additional interactive: extra heavy confetti for main button
+    function extraHeavyConfetti() {
+      canvasConfetti({
+        particleCount: 280,
+        spread: 120,
+        origin: { y: 0.5 },
+        startVelocity: 20,
+        colors: ['#ff66aa', '#ffcc44', '#66ffcc', '#ff8866', '#ffaa77']
+      });
+      setTimeout(() => {
+        canvasConfetti({
+          particleCount: 80,
+          angle: 90,
+          spread: 70,
+          origin: { y: 0.4, x: 0.5 },
+          startVelocity: 18,
+        });
+      }, 80);
+    }
+    confettiBtn.addEventListener('click', () => extraHeavyConfetti());
+    
+    // final subtle floating effect
+    const style = document.createElement('style');
+    style.textContent = `
+      .flame.lit {
+        animation: flicker 0.12s infinite alternate;
+      }
+      .decorative-message p {
+        transition: all 0.2s;
+      }
+      .candle-container:active .candle {
+        transform: translateY(2px);
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Bonus: Simulate "wish" when candle blown out via microphone: we already show message
+    // Additional small interactive: if candle is unlit and user blows into mic while unlit? we can also relight? optional but nice: blow to relight? no, but user can click.
+    // For accessibility we also ensure that blow detection won't double-trigger repeatedly
+    console.log("Happy Birthday Card ready! 🎉");
+    
+    // Extra feature: add a gentle floating animation for the flame when lit
+    // Already done via flicker.
+  })();
+</script>
+</body>
+</html>
+```
